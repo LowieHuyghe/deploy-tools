@@ -66,7 +66,10 @@ Features:
   * **branch**: The branch to deploy
   * **caching**: Enable caching when cloning repo, doing npm install, doing composer install,...
   * **persistent**: Persistent files (ideal for .env-files and similar)
-  * **commands**: Custom commands to run before deploying
+  * **commands**: Custom commands to run before deploying. You can use variables that will be replaced at runtime:
+    - `{{environment}}`: The current environment
+    - `{{directory}}`: The working directory
+    - `{{branch}}`: The deploy branch
 3. Start deploying:
 
  ```bash
