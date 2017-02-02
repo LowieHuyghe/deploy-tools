@@ -104,8 +104,11 @@ class Gae(BaseDriver):
             return False
 
         # Push new version
-        if not self._git_push(environment, directory):
-            return False
+        if environment == self.PRODUCTION:
+            if not self._git_push(environment, directory):
+                return False
+
+        self.output.success('Successfully finished deploy sequence')
 
     def _load_config(self):
         """
