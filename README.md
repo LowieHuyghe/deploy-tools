@@ -49,25 +49,24 @@ Features:
 
  ```json
 {
-    // The repository to deploy
     "repository": "git@github.com:LowieHuyghe/deploy-tools.git",
-    // The branch to deploy
     "branch": "master",
-    // Enable caching when cloning repo, doing npm install, doing composer install,...
     "caching": true,
-    // Persistent files (ideal for .env-files and similar)
     "persistent": {
         "relative/path/to/file/starting/from/deploy.json": "relative/target/path",
         "/absolute/path/to/.env": "relative/target/.env"
     },
-    // Custom commands to run before deploying
     "commands": [
         "gulp --cwd {{directory}} build:prod",
         "echo 'Other variables: {{environment}}, {{branch}}'"
     ]
 }
 ```
-
+  * **repository**: The repository to deploy
+  * **branch**: The branch to deploy
+  * **caching**: Enable caching when cloning repo, doing npm install, doing composer install,...
+  * **persistent**: Persistent files (ideal for .env-files and similar)
+  * **commands**: Custom commands to run before deploying
 3. Start deploying:
 
  ```bash
