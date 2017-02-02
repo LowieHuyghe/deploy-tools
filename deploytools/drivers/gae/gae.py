@@ -288,7 +288,7 @@ class Gae(BaseDriver):
                     self.output.error('Failed updating .env-files')
                     return False
 
-        self.output.success('Successfully increase version of application')
+        self.output.success('Successfully increase version of %s' % app_yaml['application'])
         return True
 
     def _run_custom_commands(self, environment, directory, branch):
