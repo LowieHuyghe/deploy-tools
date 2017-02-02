@@ -22,6 +22,7 @@ class Gae(BaseDriver):
 
         self._register_command('production', 'Deploy application for production', lambda *args, **kwargs: self.deploy(self.PRODUCTION, *args, **kwargs))
         self._register_command('staging', 'Deploy application for staging', lambda *args, **kwargs: self.deploy(self.STAGING, *args, **kwargs))
+        self._register_command('development', 'Deploy application for development', lambda *args, **kwargs: self.deploy(self.DEVELOPMENT, *args, **kwargs))
 
     def deploy(self, environment, arguments=None):
         """
