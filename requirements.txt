@@ -1,0 +1,13 @@
+appdirs==1.4.0
+asciimatics==1.7.2
+click==6.7
+first==2.0.1
+future==0.16.0
+olefile==0.44
+packaging==16.8
+Pillow==4.0.0
+pyfiglet==0.7.5
+pyparsing==2.1.10
+PyYAML==3.12
+git+git@github.com:LowieHuyghe/script-core.git@7bb33d6ff8414c7281fbe4f53b9e401749e89a86#egg=scriptcore
+six==1.10.0

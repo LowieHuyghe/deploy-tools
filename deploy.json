@@ -1,0 +1,13 @@
+{
+	"repository": "git@gitlab.com:LowieHuyghe/lowiehuyghe.git",
+	"branch": "master",
+	"persistent": {
+		"requirements.txt": "requirements.txt"
+	},
+	"caching": true,
+	"commands": [
+		"gulp --cwd {{directory}} build:prod",
+		"php {{directory}} artisan migrate --force",
+		"php {{directory}} artisan lang:sync"
+	]
+}
