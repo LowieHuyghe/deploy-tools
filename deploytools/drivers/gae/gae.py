@@ -5,22 +5,6 @@ import shutil
 import re
 from datetime import datetime
 
-"""
-deploy.json example:
-{
-    "repository": "git@gitlab.com:LowieHuyghe/scripts.git",
-    "branch": "master",
-    "caching": true,
-    "persistent": {
-        "/relative/path/to/file/starting/from/deploy.json": "relative/target/path"
-    },
-    "commands": {
-        "gulp --cwd {{directory}} build:prod",
-        "echo 'Other variables: {{environment}}, {{branch}}'"
-    }
-}
-"""
-
 
 class Gae(BaseDriver):
 
