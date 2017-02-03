@@ -67,7 +67,7 @@ class Gae(BaseDriver):
 
         # Temp directory
         directory = self._get_temp_dir()
-        self.output.info('Working dir: %s' % directory)
+        # self.output.info('Working dir: %s' % directory)
 
         # Git clone
         repo = self.config('repository')
