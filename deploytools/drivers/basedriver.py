@@ -215,6 +215,15 @@ class BaseDriver(CuiScript):
                 self.output.error('Failed extracting cached npm install')
                 return False
 
+        # Prune cached
+        if caching and cache_exists:
+            command = 'npm prune --prefix "%s"' % directory
+            description = 'Pruning cached npm install'
+            out, err, exitcode = self.execute.spinner(command, description)
+            if exitcode != 0:
+                self.output.error('Failed pruning cached npm install')
+                return False
+
         # Npm install
         command = 'npm install --prefix "%s"' % directory
         if environment == self.PRODUCTION or environment == self.STAGING:
