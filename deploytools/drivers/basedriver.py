@@ -87,7 +87,7 @@ class BaseDriver(CuiScript):
                 return False
 
             # Check remote url of cache
-            command = 'if [ ! $( git config --get remote.origin.url ) = "%s" ]; then exit 1; else exit 0; fi' % repo
+            command = 'if [ ! "$( git --git-dir "%s/.git" --work-tree "%s" config --get remote.origin.url )" = "%s" ]; then exit 1; else exit 0; fi' % (directory, directory, repo)
             description = 'Checking cached git repository'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode == 1:
