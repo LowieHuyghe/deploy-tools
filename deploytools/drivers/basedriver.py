@@ -86,6 +86,14 @@ class BaseDriver(CuiScript):
                 self.output.error('Failed extracting cached git repository')
                 return False
 
+            # Check remote url of cache
+            command = 'if [ ! $( git config --get remote.origin.url ) = "%s" ]; then exit 1; else exit 0; fi' % repo
+            description = 'Checking cached git repository'
+            out, err, exitcode = self.execute.spinner(command, description)
+            if exitcode == 1:
+                self.output.error('Failed as repository of "./git.cache.tar" != repository in deploy.json')
+                return False
+
         # Git clone
         if not caching or not cache_exists:
             command = 'git clone "%s" "%s"' % (repo, directory)
