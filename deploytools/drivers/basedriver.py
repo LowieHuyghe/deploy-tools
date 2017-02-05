@@ -321,7 +321,7 @@ class BaseDriver(CuiScript):
 
         json_file = open(json_path)
         try:
-            json_content = Encoding.to_ascii(json.load(json_file))
+            json_content = Encoding.normalize(json.load(json_file))
         except OSError:
             self.output.error('Could not load \'%s\'' % filename)
             return False
