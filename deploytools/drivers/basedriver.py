@@ -6,6 +6,7 @@ import tempfile
 import os
 import json
 import yaml
+import shutil
 
 
 class BaseDriver(CuiScript):
@@ -41,7 +42,7 @@ class BaseDriver(CuiScript):
         """
 
         for temp_dir in self._temp_dirs:
-            pass  # shutil.rmtree(temp_dir)
+            shutil.rmtree(temp_dir)
         self._temp_dirs = []
 
     def _deploy_confirm(self, environment, warnings=None):
@@ -249,20 +250,13 @@ class BaseDriver(CuiScript):
         """
         Update submodules
         :param environment: The environment
-        :param directory:   THe directoryzsh
+        :param directory:   THe directory
         :return:            Success
         """
 
-        # Submodule sync
-        command = 'git --git-dir "%s/.git" --work-tree "%s" submodule sync' % (directory, directory)
-        description = 'Syncing submodules'
-        out, err, exitcode = self.execute.spinner(command, description)
-        if exitcode != 0:
-            self.output.error('Failed syncing submodules\n%s' % '\n'.join(err))
-            return False
-
-        # Submodule sync
-        command = 'git --git-dir "%s/.git" --work-tree "%s" submodule update --init --recursive' % (directory, directory)
+        # Submodule update
+        # Note: submodule-command requires to be in the working directory instead of --work-tree
+        command = 'cd "%s" && git --git-dir "%s/.git" submodule update --init --recursive' % (directory, directory)
         description = 'Updating submodules'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
