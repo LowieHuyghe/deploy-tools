@@ -69,9 +69,15 @@ class Gae(BaseDriver):
         directory = self._get_temp_dir()
         # self.output.info('Working dir: %s' % directory)
 
-        # Git clone
+        # Config
         repo = self.config('repository')
         branch = self.config('branch')
+
+        # Run before commands
+        if not self._run_custom_commands(environment, directory, branch, 'before_commands'):
+            return False
+
+        # Git clone
         if not self._git_clone(environment, directory, repo, branch, caching=caching):
             return False
 
@@ -100,8 +106,8 @@ class Gae(BaseDriver):
         if not self._update_app_yaml_version(environment, directory, app_yaml, branch):
             return False
 
-        # Run custom commands
-        if not self._run_custom_commands(environment, directory, branch):
+        # Run after commands
+        if not self._run_custom_commands(environment, directory, branch, 'after_commands'):
             return False
 
         # Deploy application
@@ -141,8 +147,11 @@ class Gae(BaseDriver):
         if self.config('caching') is None:
             self.output.error('\'caching\' is not set in deploy.json')
             return False
-        if self.config('commands') is None:
-            self.output.error('\'commands\' is not set in deploy.json')
+        if self.config('before_commands') is None:
+            self.output.error('\'before_commands\' is not set in deploy.json')
+            return False
+        if self.config('after_commands') is None:
+            self.output.error('\'after_commands\' is not set in deploy.json')
             return False
 
         return True
@@ -295,16 +304,17 @@ class Gae(BaseDriver):
         self.output.success('Successfully increase version of %s' % app_yaml['application'])
         return True
 
-    def _run_custom_commands(self, environment, directory, branch):
+    def _run_custom_commands(self, environment, directory, branch, key):
         """
         Run the custom commands
         :param environment: The environment
         :param directory:   The working directory
         :param branch:      The branch
+        :param key:         Key to fetch config from
         :return:            Success
         """
 
-        commands = self.config('commands', [])
+        commands = self.config(key, [])
         if not commands:
             self.output.info('Skipped custom commands')
             return True
