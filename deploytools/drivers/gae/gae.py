@@ -84,6 +84,10 @@ class Gae(BaseDriver):
         if not app_yaml:
             return False
 
+        # Update submodules
+        if not self._submodules_update(environment, directory):
+            return False
+
         # Composer install
         if not self._composer_install(environment, directory, caching=caching):
             return False
@@ -161,7 +165,7 @@ class Gae(BaseDriver):
 
         out, err, exitcode = self.execute.spinner(copy_persistent_files, 'Copying persistent files', (persistent_files, directory))
         if exitcode != 0:
-            self.output.error('Failed copying persistent files')
+            self.output.error('Failed copying persistent files\n%s' % '\n'.join(err))
             return False
 
         self.output.success('Successfully copied persistent files')
@@ -216,7 +220,7 @@ class Gae(BaseDriver):
             description = 'Increase version of app.yaml'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed to increase version of app.yaml')
+                self.output.error('Failed to increase version of app.yaml\n%s' % '\n'.join(err))
                 return False
 
             # Add file to git
@@ -224,7 +228,7 @@ class Gae(BaseDriver):
             description = 'Adding the increased app.yaml to git'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed adding the increased app.yaml to git')
+                self.output.error('Failed adding the increased app.yaml to git\n%s' % '\n'.join(err))
                 return False
 
             # Commit
@@ -236,7 +240,7 @@ class Gae(BaseDriver):
             description = 'Committing the increased app.yaml to git'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed committing the increased app.yaml to git')
+                self.output.error('Failed committing the increased app.yaml to git\n%s' % '\n'.join(err))
                 return False
 
             # Last hash
@@ -244,7 +248,7 @@ class Gae(BaseDriver):
             description = 'Fetching the hash of the last commit'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed fetching the hash of the last commit')
+                self.output.error('Failed fetching the hash of the last commit\n%s' % '\n'.join(err))
                 return False
             commit_hash = out[0]
 
@@ -253,7 +257,7 @@ class Gae(BaseDriver):
             description = 'Tagging the last commit as a new release'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed tagging the last commit as a new release')
+                self.output.error('Failed tagging the last commit as a new release\n%s' % '\n'.join(err))
                 return False
 
         else:
@@ -285,7 +289,7 @@ class Gae(BaseDriver):
                 description = 'Updating .env-files'
                 out, err, exitcode = self.execute.spinner(command, description)
                 if exitcode != 0:
-                    self.output.error('Failed updating .env-files')
+                    self.output.error('Failed updating .env-files\n%s' % '\n'.join(err))
                     return False
 
         self.output.success('Successfully increase version of %s' % app_yaml['application'])
@@ -331,7 +335,7 @@ class Gae(BaseDriver):
         description = 'Deploying the app'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed deploying the app')
+            self.output.error('Failed deploying the app\n%s' % '\n'.join(err))
             return False
 
         self.output.success('Successfully deployed the app')
@@ -349,14 +353,14 @@ class Gae(BaseDriver):
         description = 'Pulling git repository before pushing'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed pulling git repository before pushing')
+            self.output.error('Failed pulling git repository before pushing\n%s' % '\n'.join(err))
             return False
 
         command = 'git --git-dir "%s/.git" --work-tree "%s" push --follow-tags' % (directory, directory)
         description = 'Pushing new version to repository'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed pushing new version to repository')
+            self.output.error('Failed pushing new version to repository\n%s' % '\n'.join(err))
             return False
 
         self.output.success('Successfully pushed new version to repository')

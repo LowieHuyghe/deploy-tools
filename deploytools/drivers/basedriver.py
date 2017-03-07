@@ -3,7 +3,6 @@ from scriptcore.cuiscript import CuiScript
 from scriptcore.encoding.encoding import Encoding
 from deploytools.models.user import User
 import tempfile
-import shutil
 import os
 import json
 import yaml
@@ -83,7 +82,7 @@ class BaseDriver(CuiScript):
             description = 'Extracting cached git repository'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed extracting cached git repository')
+                self.output.error('Failed extracting cached git repository\n%s' % '\n'.join(err))
                 return False
 
             # Check remote url of cache
@@ -100,7 +99,7 @@ class BaseDriver(CuiScript):
             description = 'Cloning repository \'%s\'' % repo
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed cloning repository \'%s\'' % repo)
+                self.output.error('Failed cloning repository \'%s\'\n%s' % (repo, '\n'.join(err)))
                 return False
 
         # Checkout branch
@@ -108,7 +107,7 @@ class BaseDriver(CuiScript):
         description = 'Checking out branch \'%s\'' % branch
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed checking out branch \'%s\'' % branch)
+            self.output.error('Failed checking out branch \'%s\'\n%s' % (branch, '\n'.join(err)))
             return False
 
         # Fetch origin
@@ -117,7 +116,7 @@ class BaseDriver(CuiScript):
             description = 'Fetching from origin'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed fetching from origin')
+                self.output.error('Failed fetching from origin\n%s' % '\n'.join(err))
                 return False
 
         # Reset to origin
@@ -126,7 +125,7 @@ class BaseDriver(CuiScript):
             description = 'Resetting to origin'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed resetting to origin')
+                self.output.error('Failed resetting to origin\n%s' % '\n'.join(err))
                 return False
 
         # Caching git repo
@@ -135,7 +134,7 @@ class BaseDriver(CuiScript):
             description = 'Caching git repository'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed caching git repository')
+                self.output.error('Failed caching git repository\n%s' % '\n'.join(err))
                 return False
 
         self.output.success('Successfully cloned repository \'%s#%s\'' % (repo, branch))
@@ -164,7 +163,7 @@ class BaseDriver(CuiScript):
             description = 'Extracting cached composer install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed extracting cached composer install')
+                self.output.error('Failed extracting cached composer install\n%s' % '\n'.join(err))
                 return False
 
         # Composer install
@@ -174,7 +173,7 @@ class BaseDriver(CuiScript):
         description = 'Running composer install'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed running composer install')
+            self.output.error('Failed running composer install\n%s' % '\n'.join(err))
             return False
 
         # Caching composer install
@@ -183,7 +182,7 @@ class BaseDriver(CuiScript):
             description = 'Caching composer install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed caching composer install')
+                self.output.error('Failed caching composer install\n%s' % '\n'.join(err))
                 return False
 
         self.output.success('Successfully ran composer install')
@@ -212,7 +211,7 @@ class BaseDriver(CuiScript):
             description = 'Extracting cached npm install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed extracting cached npm install')
+                self.output.error('Failed extracting cached npm install\n%s' % '\n'.join(err))
                 return False
 
         # Prune cached
@@ -221,7 +220,7 @@ class BaseDriver(CuiScript):
             description = 'Pruning cached npm install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed pruning cached npm install')
+                self.output.error('Failed pruning cached npm install\n%s' % '\n'.join(err))
                 return False
 
         # Npm install
@@ -231,7 +230,7 @@ class BaseDriver(CuiScript):
         description = 'Running npm install'
         out, err, exitcode = self.execute.spinner(command, description)
         if exitcode != 0:
-            self.output.error('Failed running npm install')
+            self.output.error('Failed running npm install\n%s' % '\n'.join(err))
             return False
 
         # Caching npm install
@@ -240,10 +239,37 @@ class BaseDriver(CuiScript):
             description = 'Caching npm install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed caching npm install')
+                self.output.error('Failed caching npm install\n%s' % '\n'.join(err))
                 return False
 
         self.output.success('Successfully ran npm install')
+        return True
+
+    def _submodules_update(self, environment, directory):
+        """
+        Update submodules
+        :param environment: The environment
+        :param directory:   THe directoryzsh
+        :return:            Success
+        """
+
+        # Submodule sync
+        command = 'git --git-dir "%s/.git" --work-tree "%s" submodule sync' % (directory, directory)
+        description = 'Syncing submodules'
+        out, err, exitcode = self.execute.spinner(command, description)
+        if exitcode != 0:
+            self.output.error('Failed syncing submodules\n%s' % '\n'.join(err))
+            return False
+
+        # Submodule sync
+        command = 'git --git-dir "%s/.git" --work-tree "%s" submodule update --init --recursive' % (directory, directory)
+        description = 'Updating submodules'
+        out, err, exitcode = self.execute.spinner(command, description)
+        if exitcode != 0:
+            self.output.error('Failed updating submodules\n%s' % '\n'.join(err))
+            return False
+
+        self.output.success('Successfully updated submodules')
         return True
 
     def _get_current_user(self):
