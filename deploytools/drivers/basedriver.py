@@ -218,6 +218,8 @@ class BaseDriver(CuiScript):
         # Prune cached
         if caching and cache_exists:
             command = 'npm prune --prefix "%s"' % directory
+            if environment == self.PRODUCTION or environment == self.STAGING:
+                command += ' --production'
             description = 'Pruning cached npm install'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
