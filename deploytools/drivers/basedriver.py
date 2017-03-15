@@ -351,6 +351,7 @@ class BaseDriver(CuiScript):
         icon = config['icon'] if 'icon' in config else None
 
         self._slack_integration = Slack(web_hook_url, channel=channel, username=username, icon=icon)
+        return True
 
     def _notify_started(self, deploy_stage, name, environment, details=None):
         """

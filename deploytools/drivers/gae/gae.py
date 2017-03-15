@@ -165,7 +165,7 @@ class Gae(BaseDriver):
             return False
 
         # Load slack integration
-        slack_integration = self.config('notification.slack', None)
+        slack_integration = self.config('notifications.slack', None)
         if slack_integration is not None:
             if not self._set_slack_integration(slack_integration):
                 return False
