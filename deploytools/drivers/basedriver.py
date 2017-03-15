@@ -326,28 +326,3 @@ class BaseDriver(CuiScript):
             yaml_file.close()
 
         return True
-
-    def _json_load(self, directory, filename):
-        """
-        Load json file
-        :param directory:   The working directory
-        :param filename:    The file to load
-        :return:            Dict
-        """
-
-        json_path = os.path.join(directory, filename)
-
-        if not os.path.isfile(json_path):
-            self.output.error('No \'%s\' found' % filename)
-            return False
-
-        json_file = open(json_path)
-        try:
-            json_content = Encoding.normalize(json.load(json_file))
-        except OSError:
-            self.output.error('Could not load \'%s\'' % filename)
-            return False
-        finally:
-            json_file.close()
-
-        return json_content

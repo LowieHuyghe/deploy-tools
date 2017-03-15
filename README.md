@@ -45,35 +45,41 @@ Features:
 #### Setup
 
 1. Create a separate directory for the deploy-files of your project.
-2. Make a deploy.json file like so:
+2. Make a deploy.yaml file like so:
 
- ```json
-{
-    "repository": "git@github.com:LowieHuyghe/deploy-tools.git",
-    "branch": "master",
-    "caching": true,
-    "persistent": {
-        "relative/path/to/file/starting/from/deploy.json": "relative/target/path",
-        "/absolute/path/to/.env": "relative/target/.env"
-    },
-    "before_commands": [
-        "apt-get install php5-curl"
-    ],
-    "after_commands": [
-        "gulp --cwd {{directory}} build:prod",
-        "echo 'Other variables: {{environment}}, {{branch}}'"
-    ]
-}
+ ```yaml
+deploy:
+    repository: git@github.com:LowieHuyghe/deploy-tools.git
+    branch: master
+    caching: true
+    persistent:
+       relative/path/to/file/starting/from/deploy.yaml: relative/target/path
+       /absolute/path/to/.env: relative/target/.env
+
+before_all:
+   - apt-get install php5-curl
+
+before_deploy:
+   - gulp --cwd {{directory}} build:prod
+   - echo 'Other variables are {{environment}}, {{branch}}'
+
+after_success:
+    - echo 'The deploy was a great success'
+
+after_failed:
+    - echo 'The deploy has failed'
 ```
-  * **repository**: The repository to deploy
-  * **branch**: The branch to deploy
-  * **caching**: Enable caching when cloning repo, doing npm install, doing composer install,...
-  * **persistent**: Persistent files (ideal for .env-files and similar)
-  * **before_commands**: Custom commands to run first hand. You can use variables that will be replaced at runtime:
+  * **deploy.repository**: The repository to deploy
+  * **deploy.branch**: The branch to deploy *(default: master)*
+  * **deploy.caching**: Enable caching when cloning repo, doing npm install, doing composer install,... *(default: true)*
+  * **deploy.persistent**: Persistent files (ideal for .env-files and similar) *(default: {})*
+  * **before_all**: Custom commands to run first hand *(default: [])*. You can use variables that will be replaced at runtime:
     - `{{environment}}`: The current environment
     - `{{directory}}`: The working directory
     - `{{branch}}`: The deploy branch
-  * **after_commands**: Custom commands to run before deploying. Same variables as *before_commands* can be used.
+  * **before_deploy**: Custom commands to run before deploying *(default: [])*. Same variables as *before_all* can be used.
+  * **after_success**: Custom commands to run after successful deploy *(default: [])*. Same variables as *before_all* can be used.
+  * **after_failed**: Custom commands to run after failed deploy *(default: [])*. Same variables as *before_all* can be used.
 3. Start deploying:
 
  ```bash
@@ -87,14 +93,14 @@ python deploy.py gae
 
 This explains the timeline of the deploy sequence and which actions are done.
 
-1. Load `deploy.json` and check required properties.
+1. Load `deploy.yaml` and check required properties.
 2. Confirm that the user wants to deploy.
 3. Make a temporary working dir.
-4. Run the before commands described in `deploy.json`.
+4. Run the before all commands described in `deploy.yaml`.
 5. Clone the git repo and checkout the given branch. When caching is enabled,
 the repo will be cached and reused on next deploy (when reusing, the repo is
 fetched and reset to the remote). 
-6. Copy the persistent files described in deploy.json to the working directory.
+6. Copy the persistent files described in deploy.yaml to the working directory.
 7. When composer.json is available, run `composer install (--no-dev)`.
 8. When package.json is available, run `npm install (--production)`.
 9. Update `app.yaml`:
@@ -108,7 +114,9 @@ fetched and reset to the remote).
     - Add `APP_ENV: {{environment}}` to `env_variables`
     - Require `login: admin` for each handler ([more info](https://cloud.google.com/appengine/docs/python/config/appref#handlers_login))
     - Also apply `APP_ENV: {{environment}}` to any `.env*`-files
-10. Run the after commands described in `deploy.json`.
+10. Run the before deploy commands described in `deploy.yaml`.
 11. Deploy the application to Google App Engine.
-12. If production, push the new commit and tag to the repository.
-13. Done.
+12. If deploy failed, run the after failed commands.
+13. If production, push the new commit and tag to the repository.
+14. If deploy succeeded, run the after success commands.
+15. Done.

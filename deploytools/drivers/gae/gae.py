@@ -49,7 +49,7 @@ class Gae(BaseDriver):
         # Prepare
         if not self._load_config():
             return False
-        caching = self.config('caching', True)
+        caching = self.config('deploy.caching', True)
 
         # Confirm deploy
         warnings = []
@@ -70,11 +70,11 @@ class Gae(BaseDriver):
         # self.output.info('Working dir: %s' % directory)
 
         # Config
-        repo = self.config('repository')
-        branch = self.config('branch')
+        repo = self.config('deploy.repository')
+        branch = self.config('deploy.branch', 'master')
 
-        # Run before commands
-        if not self._run_custom_commands(environment, directory, branch, 'before_commands'):
+        # Run before all commands
+        if not self._run_custom_commands(environment, directory, branch, 'before_all'):
             return False
 
         # Git clone
@@ -106,18 +106,23 @@ class Gae(BaseDriver):
         if not self._update_app_yaml_version(environment, directory, app_yaml, branch):
             return False
 
-        # Run after commands
-        if not self._run_custom_commands(environment, directory, branch, 'after_commands'):
+        # Run before deploy commands
+        if not self._run_custom_commands(environment, directory, branch, 'before_deploy'):
             return False
 
         # Deploy application
         if not self._deploy_to_gae(directory):
+            self._run_custom_commands(environment, directory, branch, 'after_failed')
             return False
 
         # Push new version
         if environment == self.PRODUCTION:
             if not self._git_push(environment, directory):
                 return False
+
+        # Run after success
+        if not self._run_custom_commands(environment, directory, branch, 'after_success'):
+            return False
 
         self.output.success('Successfully finished deploy sequence')
 
@@ -127,31 +132,16 @@ class Gae(BaseDriver):
         :return:    Dict
         """
 
-        deploy_json_path = 'deploy.json'
+        deploy_yaml_path = 'deploy.yaml'
 
-        if not os.path.isfile(deploy_json_path):
-            self.output.error('No \'%s\' found' % deploy_json_path)
+        if not os.path.isfile(deploy_yaml_path):
+            self.output.error('No \'%s\' found' % deploy_yaml_path)
             return False
 
-        self.config.load_from_json('deploy.json')
+        self.config.load_from_yaml('deploy.yaml')
 
-        if self.config('repository') is None:
-            self.output.error('\'repository\' is not set in deploy.json')
-            return False
-        if self.config('branch') is None:
-            self.output.error('\'branch\' is not set in deploy.json')
-            return False
-        if self.config('persistent') is None:
-            self.output.error('\'persistent\' is not set in deploy.json')
-            return False
-        if self.config('caching') is None:
-            self.output.error('\'caching\' is not set in deploy.json')
-            return False
-        if self.config('before_commands') is None:
-            self.output.error('\'before_commands\' is not set in deploy.json')
-            return False
-        if self.config('after_commands') is None:
-            self.output.error('\'after_commands\' is not set in deploy.json')
+        if self.config('deploy.repository') is None:
+            self.output.error('\'deploy > repository\' is not set in deploy.yaml')
             return False
 
         return True
@@ -163,7 +153,7 @@ class Gae(BaseDriver):
         :return:    Success
         """
 
-        persistent_files = self.config('persistent', {})
+        persistent_files = self.config('deploy.persistent', {})
         if not persistent_files:
             self.output.info('Skipped copying persistent files')
             return True
@@ -316,21 +306,22 @@ class Gae(BaseDriver):
 
         commands = self.config(key, [])
         if not commands:
-            self.output.info('Skipped custom commands')
+            self.output.info('Skipped %s' % key)
             return True
 
+        self.output.info('Running %s' % key)
         for command in commands:
             command = command.replace('{{environment}}', environment)
             command = command.replace('{{directory}}', directory)
             command = command.replace('{{branch}}', branch)
 
-            description = 'Running \'%s\'' % command
+            description = '  Running \'%s\'' % command
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode != 0:
-                self.output.error('Failed running \'%s\'\n%s' % (command, '.'.join(err)))
+                self.output.error('  Failed running \'%s\'\n%s' % (command, '.'.join(err)))
                 return False
             else:
-                self.output.success('Successfully ran \'%s\'' % command)
+                self.output.success('  Successfully ran \'%s\'' % command)
 
         return True
 
