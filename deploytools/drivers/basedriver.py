@@ -412,7 +412,7 @@ class BaseDriver(CuiScript):
         :return:            Success
         """
 
-        if self._slack_integration is not None:
+        if self._slack_integration is None:
             return False
 
         user = self._get_current_user()
