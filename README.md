@@ -49,6 +49,7 @@ Features:
 
  ```yaml
 deploy:
+    name: Deploy tools
     repository: git@github.com:LowieHuyghe/deploy-tools.git
     branch: master
     caching: true
@@ -68,11 +69,20 @@ after_success:
 
 after_failed:
     - echo 'The deploy has failed'
+
+notifications:
+    slack:
+        webhook: https://hooks.slack.com/services/ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        channel: deploy-feed
+        username: Deploy Bot
+        icon: :robot_face:
 ```
-  * **deploy.repository**: The repository to deploy
-  * **deploy.branch**: The branch to deploy *(default: master)*
-  * **deploy.caching**: Enable caching when cloning repo, doing npm install, doing composer install,... *(default: true)*
-  * **deploy.persistent**: Persistent files (ideal for .env-files and similar) *(default: {})*
+  * **deploy**: General deploy config
+    - **name**: Name of the project
+    - **repository**: The repository to deploy
+    - **branch**: The branch to deploy *(default: master)*
+    - **caching**: Enable caching when cloning repo, doing npm install, doing composer install,... *(default: true)*
+    - **persistent**: Persistent files (ideal for .env-files and similar) *(default: {})*
   * **before_all**: Custom commands to run first hand *(default: [])*. You can use variables that will be replaced at runtime:
     - `{{environment}}`: The current environment
     - `{{directory}}`: The working directory
@@ -80,6 +90,12 @@ after_failed:
   * **before_deploy**: Custom commands to run before deploying *(default: [])*. Same variables as *before_all* can be used.
   * **after_success**: Custom commands to run after successful deploy *(default: [])*. Same variables as *before_all* can be used.
   * **after_failed**: Custom commands to run after failed deploy *(default: [])*. Same variables as *before_all* can be used.
+  * **notifications**
+    - **slack**: Setup notification-callback for Slack while deploying
+      - **webhook**: Webhook URL for Slack
+      - **channel**: Channel to post notifications in
+      - **username**: Username for Webhook
+      - **icon**: Icon for Webhook
 3. Start deploying:
 
  ```bash

@@ -1,10 +1,9 @@
 
 from scriptcore.cuiscript import CuiScript
-from scriptcore.encoding.encoding import Encoding
+from scriptcore.integrations.slack.slack import Slack
 from deploytools.models.user import User
 import tempfile
 import os
-import json
 import yaml
 import shutil
 
@@ -15,6 +14,12 @@ class BaseDriver(CuiScript):
     STAGING = 'staging'
     DEVELOPMENT = 'development'
 
+    DEPLOY_STAGE_BUILDING = 'building'
+    DEPLOY_STAGE_DEPLOYING = 'deploying'
+    NOTIFY_TYPE_STARTED = 'started'
+    NOTIFY_TYPE_SUCCEEDED = 'succeeded'
+    NOTIFY_TYPE_FAILED = 'failed'
+
     def __init__(self, *args, **kwargs):
         """
         Construct the script
@@ -23,6 +28,8 @@ class BaseDriver(CuiScript):
         super(BaseDriver, self).__init__(*args, **kwargs)
 
         self._temp_dirs = []
+        self._deploy_stage = None
+        self._slack_integration = None
 
     def _get_temp_dir(self):
         """
@@ -91,7 +98,7 @@ class BaseDriver(CuiScript):
             description = 'Checking cached git repository'
             out, err, exitcode = self.execute.spinner(command, description)
             if exitcode == 1:
-                self.output.error('Failed as repository of "./git.cache.tar" != repository in deploy.json')
+                self.output.error('Failed as repository of "./git.cache.tar" != given repository')
                 return False
 
         # Git clone
@@ -326,3 +333,135 @@ class BaseDriver(CuiScript):
             yaml_file.close()
 
         return True
+
+    def _set_slack_integration(self, config):
+        """
+        Set slack integration
+        :param config:  The config
+        :return:                void
+        """
+
+        web_hook_url = config['webhook'] if 'webhook' in config else None
+        if web_hook_url is None:
+            self.output.error('\'webhook\' is not set for slack notifications')
+            return False
+
+        channel = config['channel'] if 'channel' in config else None
+        username = config['username'] if 'username' in config else None
+        icon = config['icon'] if 'icon' in config else None
+
+        self._slack_integration = Slack(web_hook_url, channel=channel, username=username, icon=icon)
+
+    def _notify_started(self, deploy_stage, name, environment, details=None):
+        """
+        Notify started
+        :param deploy_stage:    New deploy stage
+        :param name:            Name of the project
+        :param environment:     The environment
+        :param details:         Details
+        :return:                Success
+        """
+
+        self._deploy_stage = deploy_stage
+        return self._notify(BaseDriver.NOTIFY_TYPE_STARTED, name, environment, details=details)
+
+    def _notify_succeeded(self, name, environment, details=None):
+        """
+        Notify succeeded
+        :param name:        Name of the project
+        :param environment: The environment
+        :param details:     Details
+        :return:            Success
+        """
+
+        return self._notify(BaseDriver.NOTIFY_TYPE_SUCCEEDED, name, environment, details=details)
+
+    def _notify_failed(self, name, environment, details=None):
+        """
+        Notify failed
+        :param name:        Name of the project
+        :param environment: The environment
+        :param details:     Details
+        :return:            Success
+        """
+
+        return self._notify(BaseDriver.NOTIFY_TYPE_FAILED, name, environment, details=details)
+
+    def _notify(self, notify_type, name, environment, details=None):
+        """
+        Notify user
+        :param notify_type: Type of notification
+        :param name:        Name of the project
+        :param environment: The environment
+        :param details:     Details
+        :return:            Success
+        """
+
+        # Text
+        text = self._get_notify_text(notify_type, name, environment)
+
+        # Success
+        if type == self.NOTIFY_TYPE_SUCCEEDED:
+            success = True
+        elif type == self.NOTIFY_TYPE_FAILED:
+            success = False
+        else:
+            success = None
+
+        # Send
+        sent = False
+        if self._slack_integration is not None:
+            # Text
+            if details is None:
+                slack_text = None
+                slack_sub_text = text
+            else:
+                slack_text = text
+                slack_sub_text = details
+            # Color
+            if success is None:
+                color = '#e3e4e6'
+            elif success:
+                color = 'good'
+            else:
+                color = 'danger'
+            # Send
+            sent = self._slack_integration.send_message(slack_text, sub_text=slack_sub_text, color=color) or sent
+
+        return sent
+
+    def _get_notify_text(self, notify_type, name, environment):
+        """
+        Notify user
+        :param notify_type: Type of notification
+        :param name:        Name of the project
+        :param environment: The environment
+        :return:            Success
+        """
+
+        user = self._get_current_user()
+
+        if self._deploy_stage == self.DEPLOY_STAGE_BUILDING:
+            if notify_type == self.NOTIFY_TYPE_STARTED:
+                text = 'Started building %s for %s by %s' % (name, environment, user.name)
+            elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
+                text = 'Succeeded building %s for %s by %s' % (name, environment, user.name)
+            elif notify_type == self.NOTIFY_TYPE_FAILED:
+                text = 'Failed building %s for %s by %s' % (name, environment, user.name)
+            else:
+                raise RuntimeError('Unknown notification type was given while notifying user')
+
+        elif self._deploy_stage == self.DEPLOY_STAGE_DEPLOYING:
+            if notify_type == self.NOTIFY_TYPE_STARTED:
+                text = 'Started deploying %s for %s by %s' % (name, environment, user.name)
+            elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
+                text = 'Succeeded deploying %s for %s by %s' % (name, environment, user.name)
+            elif notify_type == self.NOTIFY_TYPE_FAILED:
+                text = 'Failed deploying %s for %s by %s' % (name, environment, user.name)
+            else:
+                raise RuntimeError('Unknown notification type was given while notifying user')
+
+        else:
+            raise RuntimeError('Unknown deploy stage was set while notifying user')
+
+        return text

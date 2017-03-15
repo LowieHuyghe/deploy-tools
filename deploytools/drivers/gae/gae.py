@@ -61,6 +61,14 @@ class Gae(BaseDriver):
             return False
         self.output('')
 
+        # Config
+        name = self.config('deploy.name')
+        repo = self.config('deploy.repository')
+        branch = self.config('deploy.branch', 'master')
+
+        # Notify started building
+        self._notify_started(self.DEPLOY_STAGE_BUILDING, name, environment)
+
         # Title
         self.output.title('Preparing deploy')
         self.output('')
@@ -69,62 +77,75 @@ class Gae(BaseDriver):
         directory = self._get_temp_dir()
         # self.output.info('Working dir: %s' % directory)
 
-        # Config
-        repo = self.config('deploy.repository')
-        branch = self.config('deploy.branch', 'master')
-
         # Run before all commands
         if not self._run_custom_commands(environment, directory, branch, 'before_all'):
+            self._notify_failed(name, environment)
             return False
 
         # Git clone
         if not self._git_clone(environment, directory, repo, branch, caching=caching):
+            self._notify_failed(name, environment)
             return False
 
         # Copy persistent files
         if not self._copy_persistent_files(directory):
+            self._notify_failed(name, environment)
             return False
 
         # Load app.yaml
         app_yaml = self._get_app_yaml(directory)
         if not app_yaml:
+            self._notify_failed(name, environment)
             return False
 
         # Update submodules
         if not self._submodules_update(environment, directory):
+            self._notify_failed(name, environment)
             return False
 
         # Composer install
         if not self._composer_install(environment, directory, caching=caching):
+            self._notify_failed(name, environment)
             return False
 
         # Npm install
         if not self._npm_install(environment, directory, caching=caching):
+            self._notify_failed(name, environment)
             return False
 
         # Update app.yaml version
         if not self._update_app_yaml_version(environment, directory, app_yaml, branch):
+            self._notify_failed(name, environment)
             return False
 
         # Run before deploy commands
         if not self._run_custom_commands(environment, directory, branch, 'before_deploy'):
+            self._notify_failed(name, environment)
             return False
+
+        # Notify finished building, started deploying
+        self._notify_succeeded(name, environment)
+        self._notify_started(self.DEPLOY_STAGE_DEPLOYING, name, environment)
 
         # Deploy application
         if not self._deploy_to_gae(directory):
             self._run_custom_commands(environment, directory, branch, 'after_failed')
+            self._notify_failed(name, environment)
             return False
 
         # Push new version
         if environment == self.PRODUCTION:
             if not self._git_push(environment, directory):
+                self._notify_failed(name, environment)
                 return False
 
         # Run after success
         if not self._run_custom_commands(environment, directory, branch, 'after_success'):
+            self._notify_failed(name, environment)
             return False
 
         self.output.success('Successfully finished deploy sequence')
+        self._notify_succeeded(name, environment)
 
     def _load_config(self):
         """
@@ -138,13 +159,36 @@ class Gae(BaseDriver):
             self.output.error('No \'%s\' found' % deploy_yaml_path)
             return False
 
+        # Load and validate
         self.config.load_from_yaml('deploy.yaml')
+        if not self._validate_config():
+            return False
+
+        # Load slack integration
+        slack_integration = self.config('notification.slack', None)
+        if slack_integration is not None:
+            if not self._set_slack_integration(slack_integration):
+                return False
+
+        return True
+
+    def _validate_config(self):
+        """
+        Validate the config
+        :return:    Success
+        """
+
+        valid_config = True
+
+        if self.config('deploy.name') is None:
+            self.output.error('\'deploy > name\' is not set in deploy.yaml')
+            valid_config = False
 
         if self.config('deploy.repository') is None:
             self.output.error('\'deploy > repository\' is not set in deploy.yaml')
-            return False
+            valid_config = False
 
-        return True
+        return valid_config
 
     def _copy_persistent_files(self, directory):
         """
