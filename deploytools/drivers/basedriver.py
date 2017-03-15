@@ -398,71 +398,54 @@ class BaseDriver(CuiScript):
         :return:            Success
         """
 
-        # Text
-        text = self._get_notify_text(notify_type, name, environment)
+        success = False
+        success = self._notify_slack(notify_type, name, environment, details) or success
+        return success
 
-        # Success
-        if type == self.NOTIFY_TYPE_SUCCEEDED:
-            success = True
-        elif type == self.NOTIFY_TYPE_FAILED:
-            success = False
-        else:
-            success = None
-
-        # Send
-        sent = False
-        if self._slack_integration is not None:
-            # Text
-            if details is None:
-                slack_text = None
-                slack_sub_text = text
-            else:
-                slack_text = text
-                slack_sub_text = details
-            # Color
-            if success is None:
-                color = '#e3e4e6'
-            elif success:
-                color = 'good'
-            else:
-                color = 'danger'
-            # Send
-            sent = self._slack_integration.send_message(slack_text, sub_text=slack_sub_text, color=color) or sent
-
-        return sent
-
-    def _get_notify_text(self, notify_type, name, environment):
+    def _notify_slack(self, notify_type, name, environment, details=None):
         """
-        Notify user
+        Notify user through slack
         :param notify_type: Type of notification
         :param name:        Name of the project
         :param environment: The environment
+        :param details:     Details
         :return:            Success
         """
 
+        if self._slack_integration is not None:
+            return False
+
         user = self._get_current_user()
 
+        # Text
         if self._deploy_stage == self.DEPLOY_STAGE_BUILDING:
             if notify_type == self.NOTIFY_TYPE_STARTED:
-                text = 'Started building %s for %s by %s' % (name, environment, user.name)
+                text = ':wrench: Started building %s for *%s* by %s' % (name, environment, user.name)
             elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
-                text = 'Succeeded building %s for %s by %s' % (name, environment, user.name)
+                text = ':white_check_mark: Succeeded building %s for *%s* by %s' % (name, environment, user.name)
             elif notify_type == self.NOTIFY_TYPE_FAILED:
-                text = 'Failed building %s for %s by %s' % (name, environment, user.name)
+                text = ':x: Failed building %s for *%s* by %s' % (name, environment, user.name)
             else:
                 raise RuntimeError('Unknown notification type was given while notifying user')
-
         elif self._deploy_stage == self.DEPLOY_STAGE_DEPLOYING:
             if notify_type == self.NOTIFY_TYPE_STARTED:
-                text = 'Started deploying %s for %s by %s' % (name, environment, user.name)
+                text = ':steam_locomotive: Started deploying %s for *%s* by %s' % (name, environment, user.name)
             elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
-                text = 'Succeeded deploying %s for %s by %s' % (name, environment, user.name)
+                text = ':tada: Succeeded deploying %s for *%s* by %s' % (name, environment, user.name)
             elif notify_type == self.NOTIFY_TYPE_FAILED:
-                text = 'Failed deploying %s for %s by %s' % (name, environment, user.name)
+                text = ':x: Failed deploying %s for *%s* by %s' % (name, environment, user.name)
             else:
                 raise RuntimeError('Unknown notification type was given while notifying user')
-
         else:
             raise RuntimeError('Unknown deploy stage was set while notifying user')
 
-        return text
+        # Color
+        if notify_type == self.NOTIFY_TYPE_SUCCEEDED:
+            color = 'good'
+        elif notify_type == self.NOTIFY_TYPE_FAILED:
+            color = 'danger'
+        else:
+            color = '#e3e4e6'
+
+        # Send
+        return self._slack_integration.send_message(text, sub_text=details, color=color)
