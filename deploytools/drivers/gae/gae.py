@@ -79,48 +79,48 @@ class Gae(BaseDriver):
 
         # Run before all commands
         if not self._run_custom_commands(environment, directory, branch, 'before_all'):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while running before_all-commands')
             return False
 
         # Git clone
         if not self._git_clone(environment, directory, repo, branch, caching=caching):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while cloning git')
             return False
 
         # Copy persistent files
         if not self._copy_persistent_files(directory):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while copying persistent files')
             return False
 
         # Load app.yaml
         app_yaml = self._get_app_yaml(directory)
         if not app_yaml:
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while loading app.yaml')
             return False
 
         # Update submodules
         if not self._submodules_update(environment, directory):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while updating submodules')
             return False
 
         # Composer install
         if not self._composer_install(environment, directory, caching=caching):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while running composer install')
             return False
 
         # Npm install
         if not self._npm_install(environment, directory, caching=caching):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while running npm install')
             return False
 
         # Update app.yaml version
         if not self._update_app_yaml_version(environment, directory, app_yaml, branch):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while updating app.yaml version')
             return False
 
         # Run before deploy commands
         if not self._run_custom_commands(environment, directory, branch, 'before_deploy'):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while running before_deploy-commands')
             return False
 
         # Notify finished building, started deploying
@@ -130,18 +130,18 @@ class Gae(BaseDriver):
         # Deploy application
         if not self._deploy_to_gae(directory):
             self._run_custom_commands(environment, directory, branch, 'after_failed')
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while deploying application')
             return False
 
         # Push new version
         if environment == self.PRODUCTION:
             if not self._git_push(environment, directory):
-                self._notify_failed(name, environment)
+                self._notify_failed(name, environment, 'Failed while pushing new version')
                 return False
 
         # Run after success
         if not self._run_custom_commands(environment, directory, branch, 'after_success'):
-            self._notify_failed(name, environment)
+            self._notify_failed(name, environment, 'Failed while running after_success-commands')
             return False
 
         self.output.success('Successfully finished deploy sequence')

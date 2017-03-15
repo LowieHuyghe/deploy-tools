@@ -420,20 +420,20 @@ class BaseDriver(CuiScript):
         # Text
         if self._deploy_stage == self.DEPLOY_STAGE_BUILDING:
             if notify_type == self.NOTIFY_TYPE_STARTED:
-                text = ':wrench: Started building %s for *%s* by %s' % (name, environment, user.name)
+                text = ':wrench: Started building *%s* for *%s* by %s' % (environment, name, user.name)
             elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
-                text = ':white_check_mark: Succeeded building %s for *%s* by %s' % (name, environment, user.name)
+                text = ':white_check_mark: Succeeded building *%s* for *%s* by %s' % (environment, name, user.name)
             elif notify_type == self.NOTIFY_TYPE_FAILED:
-                text = ':x: Failed building %s for *%s* by %s' % (name, environment, user.name)
+                text = ':x: Failed building *%s* for *%s* by %s' % (environment, name, user.name)
             else:
                 raise RuntimeError('Unknown notification type was given while notifying user')
         elif self._deploy_stage == self.DEPLOY_STAGE_DEPLOYING:
             if notify_type == self.NOTIFY_TYPE_STARTED:
-                text = ':steam_locomotive: Started deploying %s for *%s* by %s' % (name, environment, user.name)
+                text = ':steam_locomotive: Started deploying *%s* for *%s* by %s' % (environment, name, user.name)
             elif notify_type == self.NOTIFY_TYPE_SUCCEEDED:
-                text = ':tada: Succeeded deploying %s for *%s* by %s' % (name, environment, user.name)
+                text = ':tada: Succeeded deploying *%s* for *%s* by %s' % (environment, name, user.name)
             elif notify_type == self.NOTIFY_TYPE_FAILED:
-                text = ':x: Failed deploying %s for *%s* by %s' % (name, environment, user.name)
+                text = ':x: Failed deploying *%s* for *%s* by %s' % (environment, name, user.name)
             else:
                 raise RuntimeError('Unknown notification type was given while notifying user')
         else:
