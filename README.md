@@ -1,4 +1,4 @@
-# Deploy Tools
+# [DEPRECATED] Deploy Tools
 
 Tools to easily deploy your application.
 
